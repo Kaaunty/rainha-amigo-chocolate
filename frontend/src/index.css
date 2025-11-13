@@ -1,0 +1,21 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+:root {
+  --red-dark: #dc2626;
+  --red-medium: #ef4444;
+  --red-light: #f87171;
+  --gold-dark: #d4af37;
+  --gold-light: #ffd700;
+  --gray-light: #f3f4f6;
+  --gray-medium: #e5e7eb;
+}
+
+body {
+  color: var(--red-dark);
+  background: #ffffff;
+  min-height: 100vh;
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
