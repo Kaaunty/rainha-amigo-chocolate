@@ -7,7 +7,6 @@ import {
   performDraw,
   exportParticipants,
   sendBatchEmails,
-  testEmail,
 } from "../services/api";
 import AdminLogin from "../components/AdminLogin";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -25,9 +24,6 @@ const Admin = () => {
   const [performingDraw, setPerformingDraw] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [sendingEmails, setSendingEmails] = useState(false);
-  const [testingEmail, setTestingEmail] = useState(false);
-  const [testEmailAddress, setTestEmailAddress] = useState("");
-  const [showTestEmailModal, setShowTestEmailModal] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -203,59 +199,6 @@ const Admin = () => {
     }
   };
 
-  const handleTestEmail = async () => {
-    if (!testEmailAddress || !testEmailAddress.includes("@")) {
-      alert("Por favor, insira um endereço de email válido.");
-      return;
-    }
-
-    try {
-      setTestingEmail(true);
-      setError("");
-      const result = await testEmail(testEmailAddress);
-
-      if (result.success) {
-        alert(
-          `✅ Email de teste enviado com sucesso para ${testEmailAddress}!\n\nVerifique sua caixa de entrada.`
-        );
-        setShowTestEmailModal(false);
-        setTestEmailAddress("");
-      } else {
-        throw new Error(result.message || "Erro ao enviar email de teste");
-      }
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Erro ao enviar email de teste.";
-      setError(errorMessage);
-      console.error("Erro ao testar email:", err);
-
-      // Mostrar mensagem mais detalhada no console
-      if (
-        errorMessage.includes("Failed to fetch") ||
-        errorMessage.includes("conexão")
-      ) {
-        console.error(`
-⚠️ ERRO DE CONEXÃO - Possíveis causas:
-
-1. A Edge Function 'send-email' não está deployada no Supabase
-   → Execute: supabase functions deploy send-email
-
-2. A URL da API está incorreta
-   → Verifique a variável VITE_API_URL no arquivo .env
-   → Deve ser: https://ebwsbboixpyafrritktv.supabase.co/functions/v1
-
-3. Problemas de CORS (improvável, mas possível)
-   → Verifique os logs da Edge Function no Supabase Dashboard
-
-4. A Edge Function está com erro
-   → Verifique os logs em: Supabase Dashboard → Edge Functions → send-email → Logs
-        `);
-      }
-    } finally {
-      setTestingEmail(false);
-    }
-  };
-
   if (!isAuthenticated) {
     return (
       <div className="admin-container">
@@ -371,16 +314,6 @@ const Admin = () => {
                 </span>
               </button>
             )}
-            <button
-              onClick={() => setShowTestEmailModal(true)}
-              disabled={testingEmail}
-              className="action-card test"
-            >
-              <span className="action-icon">🧪</span>
-              <span className="action-text">
-                {testingEmail ? "Enviando teste..." : "Testar Email"}
-              </span>
-            </button>
             {drawStatus?.isDrawn && (
               <button
                 onClick={handleSendEmails}
@@ -441,78 +374,6 @@ const Admin = () => {
           )}
         </div>
       </div>
-
-      {/* Modal de Teste de Email */}
-      {showTestEmailModal && (
-        <div
-          className="modal-overlay"
-          onClick={() => setShowTestEmailModal(false)}
-        >
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2 className="modal-title">🧪 Testar Envio de Email</h2>
-              <button
-                className="modal-close"
-                onClick={() => {
-                  setShowTestEmailModal(false);
-                  setTestEmailAddress("");
-                }}
-              >
-                ×
-              </button>
-            </div>
-            <div className="modal-body">
-              <p className="modal-description">
-                Digite um endereço de email para receber um email de teste e
-                verificar se a configuração está funcionando corretamente.
-              </p>
-              <div className="modal-input-group">
-                <label htmlFor="testEmail" className="modal-label">
-                  Email de Destino
-                </label>
-                <input
-                  type="email"
-                  id="testEmail"
-                  className="modal-input"
-                  placeholder="seu.email@exemplo.com"
-                  value={testEmailAddress}
-                  onChange={(e) => setTestEmailAddress(e.target.value)}
-                  disabled={testingEmail}
-                  onKeyPress={(e) => {
-                    if (
-                      e.key === "Enter" &&
-                      testEmailAddress &&
-                      !testingEmail
-                    ) {
-                      handleTestEmail();
-                    }
-                  }}
-                />
-              </div>
-              {error && <div className="modal-error">{error}</div>}
-            </div>
-            <div className="modal-footer">
-              <button
-                className="modal-button secondary"
-                onClick={() => {
-                  setShowTestEmailModal(false);
-                  setTestEmailAddress("");
-                }}
-                disabled={testingEmail}
-              >
-                Cancelar
-              </button>
-              <button
-                className="modal-button primary"
-                onClick={handleTestEmail}
-                disabled={testingEmail || !testEmailAddress}
-              >
-                {testingEmail ? "Enviando..." : "Enviar Teste"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
