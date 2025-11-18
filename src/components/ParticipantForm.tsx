@@ -9,6 +9,8 @@ interface ParticipantFormProps {
 const ParticipantForm = ({ onSuccess }: ParticipantFormProps) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [preferredChocolate, setPreferredChocolate] = useState("");
+  const [dislikes, setDislikes] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -44,6 +46,8 @@ const ParticipantForm = ({ onSuccess }: ParticipantFormProps) => {
       const response = await registerParticipant({
         name: name.trim(),
         email: email.trim(),
+        preferredChocolate: preferredChocolate.trim() || undefined,
+        dislikes: dislikes.trim() || undefined,
       });
       onSuccess(response.link);
     } catch (err) {
@@ -88,6 +92,36 @@ const ParticipantForm = ({ onSuccess }: ParticipantFormProps) => {
           placeholder="seu.email@empresa.com"
           disabled={loading}
           required
+        />
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="preferredChocolate" className="form-label">
+          Chocolate Preferido
+        </label>
+        <input
+          type="text"
+          id="preferredChocolate"
+          className="form-input"
+          value={preferredChocolate}
+          onChange={(e) => setPreferredChocolate(e.target.value)}
+          placeholder="Ex: ao leite, amargo, branco, com avelã..."
+          disabled={loading}
+        />
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="dislikes" className="form-label">
+          Não Gosto De
+        </label>
+        <input
+          type="text"
+          id="dislikes"
+          className="form-input"
+          value={dislikes}
+          onChange={(e) => setDislikes(e.target.value)}
+          placeholder="Ex: coco, menta, frutas secas..."
+          disabled={loading}
         />
       </div>
 

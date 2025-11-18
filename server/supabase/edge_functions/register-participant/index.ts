@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const { name, email } = await req.json();
+    const { name, email, preferredChocolate, dislikes } = await req.json();
 
     if (!name || !email) {
       return new Response(
@@ -58,6 +58,8 @@ serve(async (req) => {
         name: name.trim(),
         email: email.trim().toLowerCase(),
         token: token,
+        preferred_chocolate: preferredChocolate?.trim() || null,
+        dislikes: dislikes?.trim() || null,
       })
       .select()
       .single();
@@ -74,25 +76,6 @@ serve(async (req) => {
         );
       }
       throw error;
-    }
-
-    // Verificar se pode realizar sorteio e executar se necessário
-    const { data: status, error: statusError } = await supabaseClient.rpc("get_draw_status");
-
-    if (statusError) {
-      console.error("Erro ao verificar status do sorteio:", statusError);
-    }
-
-    if (status?.canDraw && !status?.isDrawn) {
-      // Executar sorteio automaticamente
-      const { data: drawResult, error: drawError } = await supabaseClient.rpc("perform_draw");
-      
-      if (drawError) {
-        console.error("Erro ao executar sorteio:", drawError);
-        // Não falha o cadastro se o sorteio falhar, apenas loga o erro
-      } else if (drawResult && !drawResult.success) {
-        console.warn("Sorteio não executado:", drawResult.message);
-      }
     }
 
     // Construir link

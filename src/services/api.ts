@@ -78,6 +78,8 @@ export const registerParticipant = async (
         name: data.name.trim(),
         email: data.email.trim().toLowerCase(),
         token: token,
+        preferred_chocolate: data.preferredChocolate?.trim() || null,
+        dislikes: data.dislikes?.trim() || null,
       })
       .select()
       .single();
@@ -87,48 +89,6 @@ export const registerParticipant = async (
         throw new Error("Este e-mail já está cadastrado");
       }
       throw error;
-    }
-
-    // Verificar se pode realizar sorteio e executar se necessário
-    const { data: status, error: statusError } = await supabase.rpc(
-      "get_draw_status"
-    );
-
-    if (!statusError && status?.canDraw && !status?.isDrawn) {
-      // Executar sorteio automaticamente
-      const { data: drawResult, error: drawError } = await supabase.rpc(
-        "perform_draw"
-      );
-
-      if (drawError) {
-        console.error("Erro ao executar sorteio:", drawError);
-        // Não falha o cadastro se o sorteio falhar, apenas loga o erro
-      } else if (drawResult && !drawResult.success) {
-        console.warn("Sorteio não executado:", drawResult.message);
-      } else if (drawResult && drawResult.success) {
-        // Enviar emails automaticamente após o sorteio ser realizado
-        try {
-          const { sendBatchEmails } = await import("./email");
-          const emailResult = await sendBatchEmails();
-
-          if (emailResult.success) {
-            console.log(
-              `📧 Emails enviados automaticamente: ${emailResult.results.length} sucesso, ${emailResult.errors.length} erros`
-            );
-          } else {
-            console.warn(
-              "⚠️ Alguns emails não foram enviados:",
-              emailResult.errors
-            );
-          }
-        } catch (emailError) {
-          // Não falha o cadastro se o envio de emails falhar, apenas loga o erro
-          console.error(
-            "Erro ao enviar emails após o sorteio automático:",
-            emailError
-          );
-        }
-      }
     }
 
     // Construir link
@@ -143,6 +103,8 @@ export const registerParticipant = async (
         token: participant.token,
         createdAt: participant.created_at,
         matchedWith: participant.matched_with || undefined,
+        preferredChocolate: participant.preferred_chocolate || undefined,
+        dislikes: participant.dislikes || undefined,
       },
       link: link,
     };
@@ -176,7 +138,7 @@ export const getParticipantByToken = async (
     if (participant.matched_with) {
       const { data: matched, error: matchedError } = await supabase
         .from("participants")
-        .select("id, name, email, token, created_at")
+        .select("id, name, email, token, created_at, preferred_chocolate, dislikes")
         .eq("id", participant.matched_with)
         .single();
 
@@ -189,6 +151,8 @@ export const getParticipantByToken = async (
           createdAt: matched.created_at,
           matchedWith: participant.id,
           matchedWithName: participant.name,
+          preferredChocolate: matched.preferred_chocolate || undefined,
+          dislikes: matched.dislikes || undefined,
         };
       }
     }
@@ -202,6 +166,8 @@ export const getParticipantByToken = async (
         createdAt: participant.created_at,
         matchedWith: participant.matched_with || undefined,
         matchedWithName: matchedParticipant?.name || undefined,
+        preferredChocolate: participant.preferred_chocolate || undefined,
+        dislikes: participant.dislikes || undefined,
       },
       matchedParticipant: matchedParticipant || undefined,
     };
@@ -217,7 +183,7 @@ export const getAllParticipants = async (): Promise<Participant[]> => {
     // Buscar todos os participantes
     const { data: participants, error } = await supabase
       .from("participants")
-      .select("id, name, email, token, created_at, matched_with")
+      .select("id, name, email, token, created_at, matched_with, preferred_chocolate, dislikes")
       .order("created_at", { ascending: true });
 
     if (error) {
@@ -260,6 +226,8 @@ export const getAllParticipants = async (): Promise<Participant[]> => {
       matchedWithName: p.matched_with
         ? matchedNames[p.matched_with] || undefined
         : undefined,
+      preferredChocolate: p.preferred_chocolate || undefined,
+      dislikes: p.dislikes || undefined,
     }));
   } catch (error: any) {
     return handleError(error);

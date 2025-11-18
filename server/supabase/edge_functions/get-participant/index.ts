@@ -47,7 +47,7 @@ serve(async (req) => {
     if (participant.matched_with) {
       const { data: matched } = await supabaseClient
         .from('participants')
-        .select('id, name, email, token, created_at')
+        .select('id, name, email, token, created_at, preferred_chocolate, dislikes')
         .eq('id', participant.matched_with)
         .single();
 
@@ -60,6 +60,8 @@ serve(async (req) => {
           createdAt: matched.created_at,
           matchedWith: participant.id,
           matchedWithName: participant.name,
+          preferredChocolate: matched.preferred_chocolate || null,
+          dislikes: matched.dislikes || null,
         };
       }
     }
@@ -74,6 +76,8 @@ serve(async (req) => {
           createdAt: participant.created_at,
           matchedWith: participant.matched_with,
           matchedWithName: matchedParticipant?.name || null,
+          preferredChocolate: participant.preferred_chocolate || null,
+          dislikes: participant.dislikes || null,
         },
         matchedParticipant: matchedParticipant,
       }),

@@ -10,6 +10,8 @@ CREATE TABLE IF NOT EXISTS participants (
   email VARCHAR(255) NOT NULL UNIQUE,
   token VARCHAR(255) NOT NULL UNIQUE,
   matched_with UUID REFERENCES participants(id),
+  preferred_chocolate TEXT,
+  dislikes TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

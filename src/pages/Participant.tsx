@@ -185,6 +185,30 @@ const Participant = () => {
                 🎉 Parabéns! Você tirou{" "}
                 <strong>{matchedParticipant.name}</strong> no sorteio!
               </p>
+              
+              {(matchedParticipant.preferredChocolate || matchedParticipant.dislikes) && (
+                <div className="preferences-section">
+                  {matchedParticipant.preferredChocolate && (
+                    <div className="preference-item">
+                      <span className="preference-icon">🍫</span>
+                      <div className="preference-content">
+                        <strong>Chocolate Preferido:</strong>
+                        <p>{matchedParticipant.preferredChocolate}</p>
+                      </div>
+                    </div>
+                  )}
+                  {matchedParticipant.dislikes && (
+                    <div className="preference-item">
+                      <span className="preference-icon">🚫</span>
+                      <div className="preference-content">
+                        <strong>Não Gosta De:</strong>
+                        <p>{matchedParticipant.dislikes}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              
               <p className="secret-reminder">
                 🔒 <strong>Lembre-se:</strong> Mantenha o segredo! Não conte
                 para ninguém quem você tirou.

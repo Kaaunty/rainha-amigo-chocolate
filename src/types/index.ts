@@ -6,6 +6,8 @@ export interface Participant {
   createdAt: string;
   matchedWith?: string; // ID do amigo chocolate
   matchedWithName?: string; // Nome do amigo chocolate (para facilitar exibição)
+  preferredChocolate?: string; // Chocolate preferido
+  dislikes?: string; // O que não gosta
 }
 
 export interface DrawStatus {
@@ -22,6 +24,8 @@ export interface AdminConfig {
 export interface RegisterParticipantRequest {
   name: string;
   email: string;
+  preferredChocolate?: string;
+  dislikes?: string;
 }
 
 export interface RegisterParticipantResponse {

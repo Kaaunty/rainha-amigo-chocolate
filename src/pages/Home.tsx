@@ -73,13 +73,6 @@ const Home = () => {
               Voltar
             </button>
           </div>
-
-          <div className="success-info">
-            <p>
-              💡 <strong>Dica:</strong> O sorteio será realizado automaticamente
-              quando o número mínimo de participantes for atingido.
-            </p>
-          </div>
         </div>
       </div>
     );
@@ -129,16 +122,6 @@ const Home = () => {
               <p>
                 Somente você terá acesso ao seu resultado através do seu link
                 único.
-              </p>
-            </div>
-          </div>
-          <div className="info-card">
-            <span className="info-icon">⚡</span>
-            <div>
-              <h3>Sorteio automático</h3>
-              <p>
-                Quando atingirmos o número mínimo de participantes, o sorteio
-                será realizado automaticamente.
               </p>
             </div>
           </div>
