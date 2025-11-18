@@ -97,7 +97,9 @@ BEGIN
   SELECT COUNT(*) INTO total_count FROM participants;
   SELECT COUNT(*) INTO unmatched_count FROM participants WHERE matched_with IS NULL;
   SELECT value::INTEGER INTO min_participants FROM config WHERE key = 'min_participants';
-  SELECT EXISTS(SELECT 1 FROM participants WHERE matched_with IS NOT NULL) INTO is_drawn;
+  
+  -- Sorteio é considerado realizado apenas se TODOS os participantes têm match e há pelo menos 2 participantes
+  is_drawn := unmatched_count = 0 AND total_count >= 2;
   
   -- Pode fazer sorteio se houver pelo menos 2 participantes sem match e atender o mínimo configurado
   can_draw := unmatched_count >= 2 AND unmatched_count >= min_participants;
@@ -124,6 +126,7 @@ $$ LANGUAGE plpgsql;
 -- 2. Função get_draw_status():
 --    - Agora retorna 'unmatchedParticipants' (número de participantes sem match)
 --    - 'canDraw' considera apenas participantes sem match
+--    - 'isDrawn' agora é true apenas se TODOS os participantes têm match (não apenas algum)
 --    - Permite que novos sorteios sejam feitos mesmo se alguns participantes já tiverem match
 --
 -- ============================================
