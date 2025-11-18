@@ -96,29 +96,44 @@ DECLARE
   random_id UUID;
   result JSON;
   pairs JSON[] := '{}';
+  unmatched_count INTEGER;
 BEGIN
-  -- Verifica se já foi sorteado
-  IF EXISTS (SELECT 1 FROM participants WHERE matched_with IS NOT NULL) THEN
-    RETURN json_build_object('success', false, 'message', 'Sorteio já foi realizado');
+  -- Conta participantes sem match
+  SELECT COUNT(*) INTO unmatched_count 
+  FROM participants 
+  WHERE matched_with IS NULL;
+
+  -- Verifica se há pelo menos 2 participantes sem match
+  IF unmatched_count < 2 THEN
+    RETURN json_build_object('success', false, 'message', 'É necessário pelo menos 2 participantes sem match para realizar o sorteio');
   END IF;
 
-  -- Verifica número mínimo
-  IF (SELECT COUNT(*) FROM participants) < 
+  -- Verifica número mínimo (considerando apenas participantes sem match)
+  IF unmatched_count < 
      (SELECT value::INTEGER FROM config WHERE key = 'min_participants') THEN
-    RETURN json_build_object('success', false, 'message', 'Número mínimo de participantes não atingido');
+    RETURN json_build_object('success', false, 'message', 'Número mínimo de participantes sem match não atingido');
   END IF;
 
-  -- Cria array de IDs disponíveis
-  SELECT ARRAY_AGG(id) INTO available_ids FROM participants;
+  -- Cria array de IDs disponíveis (apenas participantes sem match)
+  SELECT ARRAY_AGG(id) INTO available_ids 
+  FROM participants 
+  WHERE matched_with IS NULL;
 
-  -- Para cada participante, sorteia um amigo
-  FOR participant_record IN SELECT * FROM participants ORDER BY RANDOM() LOOP
+  -- Para cada participante sem match, sorteia um amigo
+  FOR participant_record IN 
+    SELECT * FROM participants 
+    WHERE matched_with IS NULL 
+    ORDER BY RANDOM() 
+  LOOP
     -- Remove o próprio ID do array disponível
     available_ids := array_remove(available_ids, participant_record.id);
     
     -- Se não há mais participantes disponíveis, reinicia
     IF array_length(available_ids, 1) IS NULL THEN
-      SELECT ARRAY_AGG(id) INTO available_ids FROM participants WHERE id != participant_record.id;
+      SELECT ARRAY_AGG(id) INTO available_ids 
+      FROM participants 
+      WHERE matched_with IS NULL 
+      AND id != participant_record.id;
     END IF;
     
     -- Seleciona um ID aleatório dos disponíveis
@@ -165,18 +180,25 @@ CREATE OR REPLACE FUNCTION get_draw_status()
 RETURNS JSON AS $$
 DECLARE
   total_count INTEGER;
+  unmatched_count INTEGER;
   min_participants INTEGER;
   is_drawn BOOLEAN;
+  can_draw BOOLEAN;
 BEGIN
   SELECT COUNT(*) INTO total_count FROM participants;
+  SELECT COUNT(*) INTO unmatched_count FROM participants WHERE matched_with IS NULL;
   SELECT value::INTEGER INTO min_participants FROM config WHERE key = 'min_participants';
   SELECT EXISTS(SELECT 1 FROM participants WHERE matched_with IS NOT NULL) INTO is_drawn;
+  
+  -- Pode fazer sorteio se houver pelo menos 2 participantes sem match e atender o mínimo configurado
+  can_draw := unmatched_count >= 2 AND unmatched_count >= min_participants;
   
   RETURN json_build_object(
     'isDrawn', is_drawn,
     'totalParticipants', total_count,
+    'unmatchedParticipants', unmatched_count,
     'minParticipants', min_participants,
-    'canDraw', total_count >= min_participants
+    'canDraw', can_draw
   );
 END;
 $$ LANGUAGE plpgsql;

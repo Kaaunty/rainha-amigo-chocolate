@@ -1,18 +1,18 @@
 -- ============================================
--- Funções do Banco de Dados - Amigo Chocolate
--- Rainha das Sete
+-- Migração: Permitir Sorteios Incrementais
+-- Permite que novos sorteios aconteçam mesmo se alguns participantes já tiverem match
+-- O sorteio acontece apenas entre participantes sem match (matched_with IS NULL)
 -- ============================================
--- Este arquivo contém apenas as funções que precisam ser executadas
--- Execute este arquivo no SQL Editor do Supabase
 
--- Função para realizar o sorteio
+-- Atualizar função perform_draw para permitir sorteios incrementais
 CREATE OR REPLACE FUNCTION perform_draw()
 RETURNS JSON AS $$
 DECLARE
   participant_record RECORD;
-  matched_json JSON;
+  matched_record RECORD;
   available_ids UUID[];
   random_id UUID;
+  result JSON;
   pairs JSON[] := '{}';
   unmatched_count INTEGER;
 BEGIN
@@ -65,16 +65,15 @@ BEGIN
     SET matched_with = random_id 
     WHERE id = participant_record.id;
     
-    -- Cria o JSON do par diretamente
-    matched_json := json_build_object(
+    -- Adiciona ao resultado
+    SELECT json_build_object(
       'participant_id', participant_record.id,
       'participant_name', participant_record.name,
       'matched_id', random_id,
       'matched_name', (SELECT name FROM participants WHERE id = random_id)
-    );
+    ) INTO matched_record;
     
-    -- Adiciona ao array de pares
-    pairs := array_append(pairs, matched_json);
+    pairs := array_append(pairs, matched_record::json);
   END LOOP;
 
   RETURN json_build_object(
@@ -85,19 +84,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Função para resetar o sorteio
-CREATE OR REPLACE FUNCTION reset_draw()
-RETURNS JSON AS $$
-BEGIN
-  UPDATE participants 
-  SET matched_with = NULL 
-  WHERE matched_with IS NOT NULL;
-  
-  RETURN json_build_object('success', true, 'message', 'Sorteio resetado com sucesso');
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Função para obter status do sorteio
+-- Atualizar função get_draw_status para considerar participantes sem match
 CREATE OR REPLACE FUNCTION get_draw_status()
 RETURNS JSON AS $$
 DECLARE
@@ -123,77 +110,31 @@ BEGIN
     'canDraw', can_draw
   );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql;
 
--- Função para gerar token único
-CREATE OR REPLACE FUNCTION generate_unique_token()
-RETURNS TEXT AS $$
-DECLARE
-  new_token TEXT;
-  exists_check BOOLEAN;
-BEGIN
-  LOOP
-    -- Gera um token aleatório de 32 caracteres
-    new_token := encode(gen_random_bytes(16), 'hex');
-    
-    -- Verifica se já existe
-    SELECT EXISTS(SELECT 1 FROM participants WHERE participants.token = new_token) INTO exists_check;
-    
-    -- Se não existe, retorna o token
-    IF NOT exists_check THEN
-      RETURN new_token;
-    END IF;
-  END LOOP;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Função para verificar senha do admin
-CREATE OR REPLACE FUNCTION verify_admin_password(password_input TEXT)
-RETURNS BOOLEAN AS $$
-DECLARE
-  stored_hash TEXT;
-BEGIN
-  -- Buscar hash armazenado
-  SELECT password_hash INTO stored_hash
-  FROM admin
-  LIMIT 1;
-  
-  -- Se não encontrou admin, retorna false
-  IF stored_hash IS NULL THEN
-    RETURN FALSE;
-  END IF;
-  
-  -- Comparar senha usando crypt (requer extensão pgcrypto)
-  RETURN crypt(password_input, stored_hash) = stored_hash;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Função para atualizar número mínimo de participantes
-CREATE OR REPLACE FUNCTION update_min_participants(min_participants_value INTEGER)
-RETURNS JSON AS $$
-DECLARE
-  updated_rows INTEGER;
-BEGIN
-  -- Validar valor mínimo
-  IF min_participants_value < 2 THEN
-    RETURN json_build_object('success', false, 'message', 'Número mínimo deve ser pelo menos 2');
-  END IF;
-  
-  -- Tentar atualizar primeiro
-  UPDATE config
-  SET value = min_participants_value::TEXT,
-      updated_at = NOW()
-  WHERE key = 'min_participants';
-  
-  GET DIAGNOSTICS updated_rows = ROW_COUNT;
-  
-  -- Se não atualizou nenhuma linha, inserir
-  IF updated_rows = 0 THEN
-    INSERT INTO config (key, value, updated_at)
-    VALUES ('min_participants', min_participants_value::TEXT, NOW());
-  END IF;
-  
-  RETURN json_build_object('success', true, 'message', 'Configuração atualizada com sucesso');
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+-- ============================================
+-- RESUMO DAS ALTERAÇÕES:
+-- ============================================
+-- 1. Função perform_draw():
+--    - Removida verificação que impedia sorteio se já existisse algum match
+--    - Agora considera apenas participantes sem match (matched_with IS NULL)
+--    - Verifica se há pelo menos 2 participantes sem match
+--    - Verifica número mínimo considerando apenas participantes sem match
+--
+-- 2. Função get_draw_status():
+--    - Agora retorna 'unmatchedParticipants' (número de participantes sem match)
+--    - 'canDraw' considera apenas participantes sem match
+--    - Permite que novos sorteios sejam feitos mesmo se alguns participantes já tiverem match
+--
+-- ============================================
+-- COMO APLICAR:
+-- ============================================
+-- Execute este arquivo no SQL Editor do Supabase
+-- As funções serão atualizadas automaticamente
+--
+-- Após executar, o sistema permitirá:
+-- - Fazer novos sorteios mesmo se alguns participantes já tiverem match
+-- - O sorteio acontecerá apenas entre participantes sem match
+-- - Participantes que já têm match não serão sorteados novamente
+-- ============================================
 

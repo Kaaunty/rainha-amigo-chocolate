@@ -17,6 +17,7 @@ const Participant = () => {
   const [drawStatus, setDrawStatus] = useState<{
     isDrawn: boolean;
     totalParticipants: number;
+    unmatchedParticipants?: number;
     minParticipants: number;
   } | null>(null);
 
@@ -34,6 +35,7 @@ const Participant = () => {
         setDrawStatus({
           isDrawn: status.isDrawn,
           totalParticipants: status.totalParticipants,
+          unmatchedParticipants: status.unmatchedParticipants,
           minParticipants: status.minParticipants,
         });
 
@@ -165,12 +167,48 @@ const Participant = () => {
             </button>
           </div>
         ) : !hasMatch ? (
-          <div className="no-match-section">
-            <div className="no-match-icon">🤔</div>
-            <h2 className="no-match-title">Resultado não disponível</h2>
-            <p className="no-match-message">
-              Você ainda não foi sorteado. Entre em contato com o administrador.
+          <div className="waiting-section">
+            <div className="waiting-icon">⏳</div>
+            <h2 className="waiting-title">Aguardando sorteio</h2>
+            <p className="waiting-message">
+              Você ainda não foi sorteado. Estamos aguardando mais participantes
+              para realizar um novo sorteio.
             </p>
+            {drawStatus && (
+              <div className="status-info">
+                <p>
+                  <strong>
+                    {drawStatus.unmatchedParticipants ??
+                      drawStatus.totalParticipants}
+                  </strong>{" "}
+                  de <strong>{drawStatus.minParticipants}</strong> participantes
+                </p>
+                <div className="progress-bar">
+                  <div
+                    className="progress-fill"
+                    style={{
+                      width: `${Math.min(
+                        ((drawStatus.unmatchedParticipants ??
+                          drawStatus.totalParticipants) /
+                          drawStatus.minParticipants) *
+                          100,
+                        100
+                      )}%`,
+                    }}
+                  />
+                </div>
+                <p className="progress-text">
+                  {(drawStatus.unmatchedParticipants ??
+                    drawStatus.totalParticipants) >= drawStatus.minParticipants
+                    ? "Sorteio será realizado em breve!"
+                    : `Faltam ${
+                        drawStatus.minParticipants -
+                        (drawStatus.unmatchedParticipants ??
+                          drawStatus.totalParticipants)
+                      } participantes`}
+                </p>
+              </div>
+            )}
             <button onClick={() => navigate("/")} className="action-button">
               Voltar para a página inicial
             </button>
@@ -185,8 +223,9 @@ const Participant = () => {
                 🎉 Parabéns! Você tirou{" "}
                 <strong>{matchedParticipant.name}</strong> no sorteio!
               </p>
-              
-              {(matchedParticipant.preferredChocolate || matchedParticipant.dislikes) && (
+
+              {(matchedParticipant.preferredChocolate ||
+                matchedParticipant.dislikes) && (
                 <div className="preferences-section">
                   {matchedParticipant.preferredChocolate && (
                     <div className="preference-item">
@@ -208,7 +247,7 @@ const Participant = () => {
                   )}
                 </div>
               )}
-              
+
               <p className="secret-reminder">
                 🔒 <strong>Lembre-se:</strong> Mantenha o segredo! Não conte
                 para ninguém quem você tirou.

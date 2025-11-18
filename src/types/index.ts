@@ -13,6 +13,7 @@ export interface Participant {
 export interface DrawStatus {
   isDrawn: boolean;
   totalParticipants: number;
+  unmatchedParticipants?: number; // Número de participantes sem match
   minParticipants: number;
   canDraw: boolean;
 }

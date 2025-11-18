@@ -62,14 +62,16 @@ serve(async (req) => {
     // Enviar email para cada participante
     for (const participant of participants) {
       try {
-        // Buscar o nome do participante sorteado
+        // Buscar informações do participante sorteado
         const { data: matchedParticipant } = await supabaseClient
           .from("participants")
-          .select("name")
+          .select("name, preferred_chocolate, dislikes")
           .eq("id", participant.matched_with)
           .single();
 
         const matchedName = matchedParticipant?.name || "Participante";
+        const matchedPreferredChocolate = matchedParticipant?.preferred_chocolate || null;
+        const matchedDislikes = matchedParticipant?.dislikes || null;
 
         const emailHtml = `
 <!DOCTYPE html>
@@ -95,6 +97,31 @@ serve(async (req) => {
         <span style="font-size: 24px;">${matchedName}</span>
       </p>
     </div>
+    
+    ${(matchedPreferredChocolate || matchedDislikes) ? `
+    <div style="background: #FFF8DC; padding: 20px; border: 1px solid #FFD700; margin: 20px 0; border-radius: 8px;">
+      ${matchedPreferredChocolate ? `
+      <div style="margin-bottom: 15px;">
+        <p style="margin: 0 0 5px 0; color: #8B4513; font-size: 14px; font-weight: bold;">
+          🍫 Chocolate Preferido:
+        </p>
+        <p style="margin: 0; color: #333; font-size: 16px; line-height: 1.6;">
+          ${matchedPreferredChocolate}
+        </p>
+      </div>
+      ` : ''}
+      ${matchedDislikes ? `
+      <div>
+        <p style="margin: 0 0 5px 0; color: #8B4513; font-size: 14px; font-weight: bold;">
+          🚫 Não Gosta De:
+        </p>
+        <p style="margin: 0; color: #333; font-size: 16px; line-height: 1.6;">
+          ${matchedDislikes}
+        </p>
+      </div>
+      ` : ''}
+    </div>
+    ` : ''}
     
     <div style="background: #FFF8DC; padding: 15px; border-left: 4px solid #FFD700; margin: 20px 0; border-radius: 4px;">
       <p style="margin: 0; color: #8B4513;">

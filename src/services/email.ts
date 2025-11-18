@@ -52,6 +52,36 @@ export const sendEmail = async (
                 </tr>
               </table>
               
+              ${(matchedParticipant.preferredChocolate || matchedParticipant.dislikes) ? `
+              <!-- Preferences Box -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #FFF8DC; border: 1px solid #FFD700; margin: 20px 0; border-radius: 8px;">
+                <tr>
+                  <td style="padding: 20px;">
+                    ${matchedParticipant.preferredChocolate ? `
+                    <div style="margin-bottom: 15px;">
+                      <p style="margin: 0 0 5px 0; color: #8B4513; font-size: 14px; font-weight: bold;">
+                        🍫 Chocolate Preferido:
+                      </p>
+                      <p style="margin: 0; color: #333333; font-size: 16px; line-height: 1.6;">
+                        ${matchedParticipant.preferredChocolate}
+                      </p>
+                    </div>
+                    ` : ''}
+                    ${matchedParticipant.dislikes ? `
+                    <div>
+                      <p style="margin: 0 0 5px 0; color: #8B4513; font-size: 14px; font-weight: bold;">
+                        🚫 Não Gosta De:
+                      </p>
+                      <p style="margin: 0; color: #333333; font-size: 16px; line-height: 1.6;">
+                        ${matchedParticipant.dislikes}
+                      </p>
+                    </div>
+                    ` : ''}
+                  </td>
+                </tr>
+              </table>
+              ` : ''}
+              
               <!-- Warning Box -->
               <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #FFE4E1; border-left: 4px solid #DC143C; margin: 20px 0;">
                 <tr>
@@ -131,7 +161,7 @@ export const sendBatchEmails = async (): Promise<{
     // Buscar todos os participantes com match
     const { data: participants, error: fetchError } = await supabase
       .from("participants")
-      .select("id, name, email, token, matched_with")
+      .select("id, name, email, token, matched_with, preferred_chocolate, dislikes")
       .not("matched_with", "is", null);
 
     if (fetchError) {
@@ -149,14 +179,16 @@ export const sendBatchEmails = async (): Promise<{
     // Enviar email para cada participante
     for (const participant of participants) {
       try {
-        // Buscar o nome do participante sorteado
+        // Buscar informações do participante sorteado
         const { data: matchedParticipant } = await supabase
           .from("participants")
-          .select("name")
+          .select("name, preferred_chocolate, dislikes")
           .eq("id", participant.matched_with)
           .single();
 
         const matchedName = matchedParticipant?.name || "Participante";
+        const matchedPreferredChocolate = matchedParticipant?.preferred_chocolate || null;
+        const matchedDislikes = matchedParticipant?.dislikes || null;
 
         const emailHtml = `
 <!DOCTYPE html>
@@ -196,6 +228,36 @@ export const sendBatchEmails = async (): Promise<{
                   </td>
                 </tr>
               </table>
+              
+              ${(matchedPreferredChocolate || matchedDislikes) ? `
+              <!-- Preferences Box -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #FFF8DC; border: 1px solid #FFD700; margin: 20px 0; border-radius: 8px;">
+                <tr>
+                  <td style="padding: 20px;">
+                    ${matchedPreferredChocolate ? `
+                    <div style="margin-bottom: 15px;">
+                      <p style="margin: 0 0 5px 0; color: #8B4513; font-size: 14px; font-weight: bold;">
+                        🍫 Chocolate Preferido:
+                      </p>
+                      <p style="margin: 0; color: #333333; font-size: 16px; line-height: 1.6;">
+                        ${matchedPreferredChocolate}
+                      </p>
+                    </div>
+                    ` : ''}
+                    ${matchedDislikes ? `
+                    <div>
+                      <p style="margin: 0 0 5px 0; color: #8B4513; font-size: 14px; font-weight: bold;">
+                        🚫 Não Gosta De:
+                      </p>
+                      <p style="margin: 0; color: #333333; font-size: 16px; line-height: 1.6;">
+                        ${matchedDislikes}
+                      </p>
+                    </div>
+                    ` : ''}
+                  </td>
+                </tr>
+              </table>
+              ` : ''}
               
               <!-- Warning Box -->
               <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #FFE4E1; border-left: 4px solid #DC143C; margin: 20px 0;">
