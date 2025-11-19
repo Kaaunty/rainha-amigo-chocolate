@@ -93,7 +93,7 @@ const Admin = () => {
   const handlePerformDraw = async () => {
     if (
       !confirm(
-        "Tem certeza que deseja realizar o sorteio agora? Os emails serão enviados automaticamente para todos os participantes."
+        "Tem certeza que deseja realizar o sorteio agora? Depois você poderá enviar os emails manualmente para todos os participantes."
       )
     ) {
       return;
@@ -105,7 +105,7 @@ const Admin = () => {
       await performDraw();
       await loadData();
       alert(
-        "Sorteio realizado com sucesso! Os emails foram enviados automaticamente para todos os participantes."
+        "Sorteio realizado com sucesso! Agora você pode enviar os emails pelo botão 'Enviar Emails'."
       );
     } catch (err) {
       setError(

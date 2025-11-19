@@ -138,7 +138,9 @@ export const getParticipantByToken = async (
     if (participant.matched_with) {
       const { data: matched, error: matchedError } = await supabase
         .from("participants")
-        .select("id, name, email, token, created_at, preferred_chocolate, dislikes")
+        .select(
+          "id, name, email, token, created_at, preferred_chocolate, dislikes"
+        )
         .eq("id", participant.matched_with)
         .single();
 
@@ -183,7 +185,9 @@ export const getAllParticipants = async (): Promise<Participant[]> => {
     // Buscar todos os participantes
     const { data: participants, error } = await supabase
       .from("participants")
-      .select("id, name, email, token, created_at, matched_with, preferred_chocolate, dislikes")
+      .select(
+        "id, name, email, token, created_at, matched_with, preferred_chocolate, dislikes"
+      )
       .order("created_at", { ascending: true });
 
     if (error) {
@@ -333,28 +337,6 @@ export const performDraw = async (): Promise<void> => {
 
     if (result && !result.success) {
       throw new Error(result.message || "Erro ao executar sorteio");
-    }
-
-    // Enviar emails automaticamente após o sorteio ser realizado com sucesso
-    if (result && result.success) {
-      try {
-        const { sendBatchEmails } = await import("./email");
-        const emailResult = await sendBatchEmails();
-
-        if (emailResult.success) {
-          console.log(
-            `📧 Emails enviados: ${emailResult.results.length} sucesso, ${emailResult.errors.length} erros`
-          );
-        } else {
-          console.warn(
-            "⚠️ Alguns emails não foram enviados:",
-            emailResult.errors
-          );
-        }
-      } catch (emailError) {
-        // Não falha o sorteio se o envio de emails falhar, apenas loga o erro
-        console.error("Erro ao enviar emails após o sorteio:", emailError);
-      }
     }
   } catch (error: any) {
     return handleError(error);
